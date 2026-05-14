@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Shield, AlertTriangle, Info, CheckCircle, Ban, ArrowRight } from 'lucide-react';
+import { AlertTriangle, Info, CheckCircle, Ban, ArrowRight } from 'lucide-react';
 
 interface Props {
   data: {
