@@ -2,6 +2,8 @@ import os
 import json
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import List
 import google.generativeai as genai
@@ -12,7 +14,7 @@ load_dotenv()
 # Configure Gemini
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-# Use Gemini Flash (as requested by user setting, gemini-flash-latest is a reliable alias)
+# Use Gemini Flash
 model = genai.GenerativeModel('gemini-flash-latest')
 
 app = FastAPI(title="SMS Spam Detection API")
@@ -90,6 +92,27 @@ async def classify_sms(sms_input: SMSInput):
         print(f"Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# --- Static File Serving ---
+# This serves the built frontend from the 'frontend/dist' directory
+frontend_dist = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "dist")
+
+if os.path.exists(frontend_dist):
+    # Mount the static files directory (assets, etc.)
+    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist, "assets")), name="assets")
+
+    # Serve the main index.html for all other routes (Single Page App support)
+    @app.get("/{full_path:path}")
+    async def serve_frontend(full_path: str):
+        # If the path looks like a file (has an extension), don't serve index.html
+        if "." in full_path:
+            file_path = os.path.join(frontend_dist, full_path)
+            if os.path.exists(file_path):
+                return FileResponse(file_path)
+        
+        return FileResponse(os.path.join(frontend_dist, "index.html"))
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Use environment variable PORT if available (for Render)
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
