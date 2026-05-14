@@ -26,7 +26,8 @@ function App() {
     setError(null);
 
     try {
-      const response = await axios.post('http://localhost:8000/classify', {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await axios.post(`${apiUrl}/classify`, {
         text: smsText
       });
       setResult(response.data);
